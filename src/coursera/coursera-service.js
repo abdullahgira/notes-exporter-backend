@@ -1,5 +1,4 @@
 const fs = require('fs')
-const he = require('he')
 
 const exportNotesFromCoursera = async path => {
   const data = fs.readFileSync(path, 'utf-8')
