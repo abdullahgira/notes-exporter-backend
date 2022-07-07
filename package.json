@@ -1,0 +1,34 @@
+{
+  "name": "notes-exporter-backend",
+  "version": "1.0.0",
+  "description": "Export notes from supported apps (supported apps will be listed later)",
+  "main": "index.js",
+  "engines": {
+    "node": "16.*.*",
+    "npm": "8.*.*"
+  },
+  "scripts": {
+    "start": "node .",
+    "dev": "nodemon"
+  },
+  "keywords": [
+    "notes",
+    "export",
+    "nodejs",
+    "express"
+  ],
+  "author": "abdullahgira",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.18.1",
+    "express-async-errors": "^3.1.1",
+    "he": "^1.2.0",
+    "helmet": "^5.1.0",
+    "make-promises-safe": "^5.1.0",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.19"
+  }
+}

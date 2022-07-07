@@ -1,0 +1,26 @@
+require('make-promises-safe')
+require('express-async-errors')
+
+const express = require('express')
+const cors = require('cors')
+const helmet = require('helmet')
+
+const app = express()
+
+app.use(express.json())
+app.use(cors())
+app.use(helmet())
+
+app.use(
+  '/google-play-books',
+  require('./src/google-play-books/google-play-books-routes'),
+)
+
+app.use((err, req, res, next) => {
+  return res.json({
+    error: `Something went wrong, may be you've not selected the file`,
+  })
+})
+
+const PORT = process.env.PORT || 5000
+app.listen(PORT, () => console.info(`Listening on PORT ${PORT}`))

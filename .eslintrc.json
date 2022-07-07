@@ -1,0 +1,26 @@
+{
+  "plugins": ["security"],
+  "extends": ["eslint:recommended", "plugin:security/recommended"],
+  "parserOptions": {
+      "ecmaVersion": 2018,
+      "sourceType": "module",
+      "ecmaFeatures": {}
+  },
+  "env": {
+      "node": true,
+      "es6": true,
+      "jest": true
+  },
+  "rules": {
+      "no-var": "error",
+      "no-multiple-empty-lines": "warn",
+      "no-unused-vars": "warn",
+      "quotes": [
+          "warn",
+          "single",
+          {
+              "allowTemplateLiterals": true
+          }
+      ]
+  }
+}
