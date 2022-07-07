@@ -11,6 +11,8 @@ app.use(express.json())
 app.use(cors())
 app.use(helmet())
 
+// routes
+app.use('/coursera', require('./src/coursera/coursera-routes'))
 app.use(
   '/google-play-books',
   require('./src/google-play-books/google-play-books-routes'),
