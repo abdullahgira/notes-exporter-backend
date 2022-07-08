@@ -19,7 +19,7 @@ const exportNotesFromNotion = async (url, secret) => {
 
   const highlights = _getHighlightsFromBlocks({ pageBlocks })
 
-  return { title: pageTitle, highlights }
+  return { title: pageTitle, pageId, highlights }
 }
 
 function _getNotionClient(secret) {
