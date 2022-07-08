@@ -4,7 +4,7 @@ const he = require('he')
 const exportNotesFromGooglePlayBooks = async path => {
   const data = fs.readFileSync(path, 'utf-8')
   const notes = _filterNotes(data)
-  const title = _getTitle(data)
+  const title = `Highlights from ${_getTitle(data)}`
 
   fs.unlinkSync(path)
   return { title, highlights: notes }

@@ -3,9 +3,10 @@ const fs = require('fs')
 const exportNotesFromCoursera = async path => {
   const data = fs.readFileSync(path, 'utf-8')
   const notes = _filterNotes(data)
+  const title = `Highlights from ${_getTitle(data)} - Coursera`
 
   fs.unlinkSync(path)
-  return notes
+  return { title, highlights: notes }
 }
 
 /**
@@ -33,6 +34,13 @@ function _filterNotes(data) {
   }
 
   return returnVal
+}
+
+function _getTitle(data) {
+  const regexp = /<title>(.*?)<\/title>/gm
+  const matches = data.matchAll(regexp)
+
+  for (const match of matches) return match[1].split('-')[0].trim()
 }
 
 const courseraService = {
