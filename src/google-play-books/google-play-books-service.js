@@ -17,10 +17,14 @@ const exportNotesFromGooglePlayBooks = async path => {
 function _filterNotes(data) {
   const regexp =
     /<td\s+class="\w+"\s+colspan="\d+"\s+rowspan="\d+"><p\s+class="\w+"><span\s+class="\w+">([\w\W][^<>]+?)<\/span><\/p><p\s+class="[\w\s]+"><span\s+class="\w+"><\/span><\/p><p\s+class="\w+"><span\s+class="\w+">.*?<\/span><\/p><\/td><td.*?href="(.*?)"/gm
+  const regexp2 =
+    /<td\s+colspan="\d+"\s+rowspan="\d+"\s+style="[\w#&;\d\-:]+"><p\s+style=".*?"><span\s+style=".*?">([\w\W][^<>]+?)<\/span><\/p><p\s+style=".*?"><span\s+style=".*?"><\/span><\/p><p\s+style=".*?"><span\s+style=".*?">.*?<\/span><\/p><\/td><td.*?href="(.*?)"/gm
   let m
   let returnVal = []
 
-  const matches = data.matchAll(regexp)
+  let matches = [...data.matchAll(regexp)]
+
+  if (!matches.length) matches = [...data.matchAll(regexp2)]
 
   for (const match of matches)
     returnVal.push({ note: he.decode(match[1]), link: match[2] })
@@ -34,9 +38,12 @@ const googlePlayBooksService = {
 
 function _getTitle(data) {
   const regexp = /<td.*?><h1.*?class=".*?"><span.*?>(.*?)<\/span>/gm
-  const matches = data.matchAll(regexp)
+  const regexp2 = /<h1.*?><span.*?>(.*?)<\/span><\/h1>/gm
+  let matches = [...data.matchAll(regexp)]
 
-  for (const match of matches) return he.decode(match[1])
+  if (!matches.length) matches = [...data.matchAll(regexp2)]
+
+  return he.decode(matches[0][1])
 }
 
 module.exports = googlePlayBooksService
