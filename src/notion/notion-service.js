@@ -48,16 +48,14 @@ async function _getPageTitle({ pageId, secret }) {
   })
 
   if (response.properties.title)
-    return `Highlights from ${response.properties.title.title
-      .map(t => t.plain_text)
-      .join('')}`
+    return response.properties.title.title.map(t => t.plain_text).join('')
 
   response = await notion.pages.properties.retrieve({
     page_id: pageId,
     property_id: 'title',
   })
   const title = response.results[0].title.plain_text
-  return `Highlights from ${title}`
+  return title
 }
 
 async function _getAllChildrenBlocksOfPage({ pageId, secret }) {
