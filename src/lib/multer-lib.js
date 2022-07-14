@@ -21,8 +21,8 @@ const uploadConfig = (size = 50 * 1024 * 1024 /* 50 MB */) =>
 const upload = ({
   size,
   acceptedTypes = {
-    extname: /text|html/i,
-    mimetype: /text|html|/i,
+    extname: /text|html|pdf/i,
+    mimetype: /text|html|application\/pdf/i,
   },
 } = {}) =>
   multer({
