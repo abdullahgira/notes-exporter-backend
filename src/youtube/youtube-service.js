@@ -1,4 +1,5 @@
 const puppeteer = require('puppeteer')
+let browser
 
 const SKIP_INTERVAL = 10
 
@@ -11,6 +12,7 @@ const exportNotesFromYoutube = async (url, timestamps) => {
   const rangeTimestamps = formattedTimestamps.map(t =>
     _getSkipInterval(t, SKIP_INTERVAL),
   )
+
   const videoTimestamps = await _tryGettingVideoTimestmaps(url)
 
   const notes = _getRangeTimestampNotesFromVideo(
@@ -35,17 +37,18 @@ async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
 }
 
 async function _getVideoTimestamps(url) {
-  const browser = await puppeteer.launch({
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
-  })
+  const browser = await _launchBrowser()
   const page = await browser.newPage()
   await page.goto(url)
 
   // Wait for more actions dropdown button then click it
-  await page.waitForSelector(
-    '#menu-container button[aria-label="More actions"]',
-  )
-  await page.click('#menu-container button[aria-label="More actions"]')
+  try {
+    await page.waitForSelector('#menu-container [aria-label="More actions"]')
+    await page.click('#menu-container [aria-label="More actions"]')
+  } catch (e) {
+    await page.waitForSelector('#top-row [aria-label="More actions"]')
+    await page.click('#top-row [aria-label="More actions"]')
+  }
 
   // Wait for transcript button element in the dropdown to appear then click it
   await page.waitForSelector(
@@ -86,7 +89,6 @@ async function _getVideoTimestamps(url) {
     return data
   })
 
-  await browser.close()
   return { title, transcript }
 }
 
@@ -215,6 +217,18 @@ function _matchPostTimeFromVideoTimestamps(timestampToMatch, videoTimestamps) {
 
 function _formatTime(time) {
   return time < 10 ? `0${time}` : time
+}
+
+async function _launchBrowser() {
+  if (browser?.isConnected()) return browser
+  else {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    })
+
+    return browser
+  }
 }
 
 const youtubeService = {
