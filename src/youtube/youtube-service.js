@@ -23,7 +23,7 @@ const exportNotesFromYoutube = async (url, timestamps) => {
 }
 
 async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
-  while (--ntimes) {
+  while (ntimes--) {
     try {
       const timestamps = await _getVideoTimestamps(url)
       return timestamps
