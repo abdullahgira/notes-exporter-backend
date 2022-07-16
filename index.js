@@ -16,6 +16,7 @@ app.use(helmet())
 app.use('/coursera', require('./src/coursera/coursera-routes'))
 app.use('/notion', require('./src/notion/notion-routes'))
 app.use('/pdf', require('./src/pdf/pdf-routes'))
+app.use('/youtube', require('./src/youtube/youtube-routes'))
 app.use(
   '/google-play-books',
   require('./src/google-play-books/google-play-books-routes'),
