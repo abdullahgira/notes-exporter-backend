@@ -15,11 +15,11 @@ const exportNotesFromYoutube = async (url, timestamps) => {
 
   const videoTimestamps = await _tryGettingVideoTimestmaps(url)
 
-  const notes = _getRangeTimestampNotesFromVideo(
-    rangeTimestamps,
-    videoTimestamps.transcript,
-    url,
-  )
+  // const notes = _getRangeTimestampNotesFromVideo(
+  //   rangeTimestamps,
+  //   videoTimestamps.transcript,
+  //   url,
+  // )
 
   return { title: videoTimestamps.title, notes }
 }
@@ -45,18 +45,22 @@ async function _getVideoTimestamps(url) {
   try {
     await page.waitForSelector('#menu-container [aria-label="More actions"]')
     await page.click('#menu-container [aria-label="More actions"]')
+
+    // Wait for transcript button element in the dropdown to appear then click it
+    await page.waitForSelector(
+      '#items > ytd-menu-service-item-renderer > tp-yt-paper-item > yt-formatted-string',
+    )
+    await page.click(
+      '#items > ytd-menu-service-item-renderer > tp-yt-paper-item > yt-formatted-string',
+    )
   } catch (e) {
     await page.waitForSelector('#top-row [aria-label="More actions"]')
     await page.click('#top-row [aria-label="More actions"]')
-  }
 
-  // Wait for transcript button element in the dropdown to appear then click it
-  await page.waitForSelector(
-    '#items > ytd-menu-service-item-renderer > tp-yt-paper-item > yt-formatted-string',
-  )
-  await page.click(
-    '#items > ytd-menu-service-item-renderer > tp-yt-paper-item > yt-formatted-string',
-  )
+    // Wait for transcript button element in the dropdown to appear then click it
+    await page.waitForSelector('#items > ytd-menu-service-item-renderer')
+    await page.click('#items > ytd-menu-service-item-renderer')
+  }
 
   await page.waitForSelector('#container > h1')
   const title = await page.evaluate(() => {
@@ -223,7 +227,7 @@ async function _launchBrowser() {
   if (browser?.isConnected()) return browser
   else {
     browser = await puppeteer.launch({
-      headless: true,
+      headless: false,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     })
 
