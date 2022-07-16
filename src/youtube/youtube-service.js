@@ -227,7 +227,7 @@ async function _launchBrowser() {
   if (browser?.isConnected()) return browser
   else {
     browser = await puppeteer.launch({
-      headless: false,
+      headless: process.env.NODE_NEV === 'production' ? true : false, // sometiems i want to change the flase to debug
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     })
 
