@@ -1,3 +1,5 @@
+const fs = require('fs')
+const path = require('path')
 const puppeteer = require('puppeteer')
 let browser
 
@@ -14,14 +16,16 @@ const exportNotesFromYoutube = async (url, timestamps) => {
   )
 
   const videoTimestamps = await _tryGettingVideoTimestmaps(url)
+  const { htmlBefore, htmlAfter } = videoTimestamps
 
-  const notes = _getRangeTimestampNotesFromVideo(
-    rangeTimestamps,
-    videoTimestamps.transcript,
-    url,
-  )
+  // const notes = _getRangeTimestampNotesFromVideo(
+  //   rangeTimestamps,
+  //   videoTimestamps.transcript,
+  //   url,
+  // )
 
-  return { title: videoTimestamps.title, notes }
+  // return { title: videoTimestamps.title, notes }
+  return { htmlBefore, htmlAfter }
 }
 
 async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
@@ -30,6 +34,7 @@ async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
       const timestamps = await _getVideoTimestamps(url)
       return timestamps
     } catch (e) {
+      console.error(e)
       if (ntimes) console.log(`trying again (${ntimes})`)
       else console.error(e)
     }
@@ -39,64 +44,105 @@ async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
 async function _getVideoTimestamps(url) {
   const browser = await _launchBrowser()
   const page = await browser.newPage()
-  await page.goto(url)
-  try {
-    // Wait for more actions dropdown button then click it
-    try {
-      await page.waitForSelector('#menu-container [aria-label="More actions"]')
-      await page.click('#menu-container [aria-label="More actions"]')
 
-      // Wait for transcript button element in the dropdown to appear then click it
-      await page.waitForXPath(
-        '//*[@id="items"]/ytd-menu-service-item-renderer/tp-yt-paper-item/yt-formatted-string',
+  const dir = path.resolve(path.join(__dirname, '..', '..', 'public'))
+
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir)
+  }
+
+  console.log('Fetching url..')
+  // await page.goto(url)
+  await page.goto(url, { waitUntil: 'load' })
+
+  // const htmlBefore = await page.$eval('html', el => el.outerHTML)
+  const htmlBefore = await page.content()
+  fs.writeFileSync(dir + '/htmlBefore.html', htmlBefore)
+  let htmlAfter
+
+  try {
+    //   // Wait for more actions dropdown button then click it
+    //   try {
+    //     await page.waitForSelector('#menu-container [aria-label="More actions"]')
+    //     await page.click('#menu-container [aria-label="More actions"]')
+
+    //     // Wait for transcript button element in the dropdown to appear then click it
+    //     await page.waitForXPath(
+    //       '//*[@id="items"]/ytd-menu-service-item-renderer/tp-yt-paper-item/yt-formatted-string',
+    //     )
+    //     await page.click(
+    //       '#items > ytd-menu-service-item-renderer > tp-yt-paper-item > yt-formatted-string',
+    //     )
+    //   } catch (e) {
+    //     await page.waitForSelector('#top-row [aria-label="More actions"]')
+    //     await page.click('#top-row [aria-label="More actions"]')
+
+    //     // Wait for transcript button element in the dropdown to appear then click it
+    //     await page.waitForXPath(
+    //       '//*[@id="items"]/ytd-menu-service-item-renderer/tp-yt-paper-item/yt-formatted-string',
+    //     )
+    //     await page.click('#items > ytd-menu-service-item-renderer')
+    //   }
+
+    try {
+      console.log('Traying first dropdown selector')
+      await page.waitForSelector(
+        '#primary #menu-container button[aria-label="More actions"]',
       )
       await page.click(
-        '#items > ytd-menu-service-item-renderer > tp-yt-paper-item > yt-formatted-string',
+        '#primary #menu-container button[aria-label="More actions"]',
       )
-    } catch (e) {
-      await page.waitForSelector('#top-row [aria-label="More actions"]')
-      await page.click('#top-row [aria-label="More actions"]')
 
-      // Wait for transcript button element in the dropdown to appear then click it
-      await page.waitForXPath(
-        '//*[@id="items"]/ytd-menu-service-item-renderer/tp-yt-paper-item/yt-formatted-string',
+      console.log('getting html...')
+      // htmlAfter = await page.$eval('html', el => el.outerHTML)
+      htmlAfter = await page.content()
+    } catch (e) {
+      console.log('Failed. Trying second dropdown selector')
+      await page.waitForSelector(
+        '#primary #top-row [aria-label="More actions"]',
       )
-      await page.click('#items > ytd-menu-service-item-renderer')
+      await page.click('#primary #top-row [aria-label="More actions"]')
+
+      console.log('getting html')
+      // htmlAfter = await page.$eval('html', el => el.outerHTML)
+      htmlAfter = await page.content()
     }
 
-    await page.waitForSelector('#container > h1')
-    const title = await page.evaluate(() => {
-      const title = document.querySelector('#container > h1')
-      return title.textContent.replace(/(\r\n|\n|\r)/gm, ' ').trim()
-    })
+    // await page.waitForSelector('#container > h1')
+    // const title = await page.evaluate(() => {
+    //   const title = document.querySelector('#container > h1')
+    //   return title.textContent.replace(/(\r\n|\n|\r)/gm, ' ').trim()
+    // })
 
-    await page.waitForSelector(
-      '[target-id="engagement-panel-searchable-transcript"] #content',
-    )
-    await page.waitForSelector('.segment-text.ytd-transcript-segment-renderer')
-    const transcript = await page.evaluate(() => {
-      const data = []
-      const textList = document.querySelectorAll(
-        '.segment-text.ytd-transcript-segment-renderer',
-      )
-      const timeList = document.querySelectorAll(
-        '.segment-timestamp.ytd-transcript-segment-renderer',
-      )
+    // await page.waitForSelector(
+    //   '[target-id="engagement-panel-searchable-transcript"] #content',
+    // )
+    // await page.waitForSelector('.segment-text.ytd-transcript-segment-renderer')
+    // const transcript = await page.evaluate(() => {
+    //   const data = []
+    //   const textList = document.querySelectorAll(
+    //     '.segment-text.ytd-transcript-segment-renderer',
+    //   )
+    //   const timeList = document.querySelectorAll(
+    //     '.segment-timestamp.ytd-transcript-segment-renderer',
+    //   )
 
-      for (let i = 0; i < timeList.length; i++) {
-        const timestampSegment = timeList[i].textContent
-          .replace(/(\r\n|\n|\r)/gm, ' ')
-          .trim()
-        const transcriptSegment = textList[i].textContent
-          .replace(/(\r\n|\n|\r)/gm, ' ')
-          .trim()
-        data.push({ time: timestampSegment, transcript: transcriptSegment })
-      }
-      return data
-    })
+    //   for (let i = 0; i < timeList.length; i++) {
+    //     const timestampSegment = timeList[i].textContent
+    //       .replace(/(\r\n|\n|\r)/gm, ' ')
+    //       .trim()
+    //     const transcriptSegment = textList[i].textContent
+    //       .replace(/(\r\n|\n|\r)/gm, ' ')
+    //       .trim()
+    //     data.push({ time: timestampSegment, transcript: transcriptSegment })
+    //   }
+    //   return data
+    // })
+    fs.writeFileSync(dir + '/htmlAfter.html', htmlAfter)
 
-    // await page.close()
-    return { title, transcript }
+    await page.close()
+    return { htmlBefore, htmlAfter }
+    // return { title, transcript }
   } catch (e) {
     await page.close()
   }
@@ -234,7 +280,11 @@ async function _launchBrowser() {
   else {
     browser = await puppeteer.launch({
       // headless: false,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--window-size=1920,1080',
+      ],
     })
 
     return browser
