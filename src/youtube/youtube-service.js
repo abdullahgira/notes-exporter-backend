@@ -16,16 +16,14 @@ const exportNotesFromYoutube = async (url, timestamps) => {
   )
 
   const videoTimestamps = await _tryGettingVideoTimestmaps(url)
-  const { htmlBefore, htmlAfter } = videoTimestamps
 
-  // const notes = _getRangeTimestampNotesFromVideo(
-  //   rangeTimestamps,
-  //   videoTimestamps.transcript,
-  //   url,
-  // )
+  const notes = _getRangeTimestampNotesFromVideo(
+    rangeTimestamps,
+    videoTimestamps.transcript,
+    url,
+  )
 
-  // return { title: videoTimestamps.title, notes }
-  return { htmlBefore, htmlAfter }
+  return { title: videoTimestamps.title, notes }
 }
 
 async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
@@ -61,29 +59,6 @@ async function _getVideoTimestamps(url) {
   let htmlAfter
 
   try {
-    //   // Wait for more actions dropdown button then click it
-    //   try {
-    //     await page.waitForSelector('#menu-container [aria-label="More actions"]')
-    //     await page.click('#menu-container [aria-label="More actions"]')
-
-    //     // Wait for transcript button element in the dropdown to appear then click it
-    //     await page.waitForXPath(
-    //       '//*[@id="items"]/ytd-menu-service-item-renderer/tp-yt-paper-item/yt-formatted-string',
-    //     )
-    //     await page.click(
-    //       '#items > ytd-menu-service-item-renderer > tp-yt-paper-item > yt-formatted-string',
-    //     )
-    //   } catch (e) {
-    //     await page.waitForSelector('#top-row [aria-label="More actions"]')
-    //     await page.click('#top-row [aria-label="More actions"]')
-
-    //     // Wait for transcript button element in the dropdown to appear then click it
-    //     await page.waitForXPath(
-    //       '//*[@id="items"]/ytd-menu-service-item-renderer/tp-yt-paper-item/yt-formatted-string',
-    //     )
-    //     await page.click('#items > ytd-menu-service-item-renderer')
-    //   }
-
     console.log('Rejecting cookies...')
     try {
       await page.click(
@@ -103,7 +78,6 @@ async function _getVideoTimestamps(url) {
       )
 
       console.log('getting html...')
-      // htmlAfter = await page.$eval('html', el => el.outerHTML)
       htmlAfter = await page.content()
     } catch (e) {
       console.log('Failed. Trying second dropdown selector')
@@ -113,45 +87,47 @@ async function _getVideoTimestamps(url) {
       await page.click('#primary #top-row [aria-label="More actions"]')
 
       console.log('getting html')
-      // htmlAfter = await page.$eval('html', el => el.outerHTML)
       htmlAfter = await page.content()
     }
 
-    // await page.waitForSelector('#container > h1')
-    // const title = await page.evaluate(() => {
-    //   const title = document.querySelector('#container > h1')
-    //   return title.textContent.replace(/(\r\n|\n|\r)/gm, ' ').trim()
-    // })
+    await page.waitForSelector('#container > h1')
+    const title = await page.evaluate(() => {
+      const title = document.querySelector('#container > h1')
+      return title.textContent.replace(/(\r\n|\n|\r)/gm, ' ').trim()
+    })
 
+    await page.waitForSelector(
+      '#items > ytd-menu-service-item-renderer:nth-child(2)',
+    )
+    await page.click('#items > ytd-menu-service-item-renderer:nth-child(2)')
     // await page.waitForSelector(
     //   '[target-id="engagement-panel-searchable-transcript"] #content',
     // )
-    // await page.waitForSelector('.segment-text.ytd-transcript-segment-renderer')
-    // const transcript = await page.evaluate(() => {
-    //   const data = []
-    //   const textList = document.querySelectorAll(
-    //     '.segment-text.ytd-transcript-segment-renderer',
-    //   )
-    //   const timeList = document.querySelectorAll(
-    //     '.segment-timestamp.ytd-transcript-segment-renderer',
-    //   )
+    await page.waitForSelector('.segment-text.ytd-transcript-segment-renderer')
+    const transcript = await page.evaluate(() => {
+      const data = []
+      const textList = document.querySelectorAll(
+        '.segment-text.ytd-transcript-segment-renderer',
+      )
+      const timeList = document.querySelectorAll(
+        '.segment-timestamp.ytd-transcript-segment-renderer',
+      )
 
-    //   for (let i = 0; i < timeList.length; i++) {
-    //     const timestampSegment = timeList[i].textContent
-    //       .replace(/(\r\n|\n|\r)/gm, ' ')
-    //       .trim()
-    //     const transcriptSegment = textList[i].textContent
-    //       .replace(/(\r\n|\n|\r)/gm, ' ')
-    //       .trim()
-    //     data.push({ time: timestampSegment, transcript: transcriptSegment })
-    //   }
-    //   return data
-    // })
+      for (let i = 0; i < timeList.length; i++) {
+        const timestampSegment = timeList[i].textContent
+          .replace(/(\r\n|\n|\r)/gm, ' ')
+          .trim()
+        const transcriptSegment = textList[i].textContent
+          .replace(/(\r\n|\n|\r)/gm, ' ')
+          .trim()
+        data.push({ time: timestampSegment, transcript: transcriptSegment })
+      }
+      return data
+    })
     fs.writeFileSync(dir + '/htmlAfter.html', htmlAfter)
 
     await page.close()
-    return { htmlBefore, htmlAfter }
-    // return { title, transcript }
+    return { title, transcript }
   } catch (e) {
     await page.close()
   }
