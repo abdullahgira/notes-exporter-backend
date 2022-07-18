@@ -54,6 +54,7 @@ async function _getVideoTimestamps(url) {
       await page.click(
         '[aria-label="Reject the use of cookies and other data for the purposes described"]',
       )
+      await page.reload({ waitUntil: 'load' })
     } catch (e) {
       console.info(`No cookies screen!`)
     }
