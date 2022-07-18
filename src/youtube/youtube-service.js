@@ -84,6 +84,15 @@ async function _getVideoTimestamps(url) {
     //     await page.click('#items > ytd-menu-service-item-renderer')
     //   }
 
+    console.log('Rejecting cookies...')
+    try {
+      await page.click(
+        '[aria-label="Reject the use of cookies and other data for the purposes described"]',
+      )
+    } catch (e) {
+      console.log(`No cookies screen`)
+    }
+
     try {
       console.log('Traying first dropdown selector')
       await page.waitForSelector(
