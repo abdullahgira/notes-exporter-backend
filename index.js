@@ -13,7 +13,8 @@ app.use(cors())
 app.use(helmet())
 
 // routes
-app.use('/static', express.static('public'))
+// app.use('/static', express.static('public'))
+
 app.use('/coursera', require('./src/coursera/coursera-routes'))
 app.use('/notion', require('./src/notion/notion-routes'))
 app.use('/pdf', require('./src/pdf/pdf-routes'))

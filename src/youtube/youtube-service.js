@@ -1,5 +1,3 @@
-const fs = require('fs')
-const path = require('path')
 const puppeteer = require('puppeteer')
 let browser
 
@@ -43,20 +41,8 @@ async function _getVideoTimestamps(url) {
   const browser = await _launchBrowser()
   const page = await browser.newPage()
 
-  const dir = path.resolve(path.join(__dirname, '..', '..', 'public'))
-
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir)
-  }
-
   console.log('Fetching url..')
-  // await page.goto(url)
   await page.goto(url, { waitUntil: 'load' })
-
-  // const htmlBefore = await page.$eval('html', el => el.outerHTML)
-  const htmlBefore = await page.content()
-  fs.writeFileSync(dir + '/htmlBefore.html', htmlBefore)
-  let htmlAfter
 
   try {
     console.log('Rejecting cookies...')
@@ -90,19 +76,19 @@ async function _getVideoTimestamps(url) {
       htmlAfter = await page.content()
     }
 
+    // get video title
     await page.waitForSelector('#container > h1')
     const title = await page.evaluate(() => {
       const title = document.querySelector('#container > h1')
       return title.textContent.replace(/(\r\n|\n|\r)/gm, ' ').trim()
     })
 
+    // click show transcriptions
     await page.waitForSelector(
       '#items > ytd-menu-service-item-renderer:nth-child(2)',
     )
     await page.click('#items > ytd-menu-service-item-renderer:nth-child(2)')
-    // await page.waitForSelector(
-    //   '[target-id="engagement-panel-searchable-transcript"] #content',
-    // )
+
     await page.waitForSelector('.segment-text.ytd-transcript-segment-renderer')
     const transcript = await page.evaluate(() => {
       const data = []
@@ -124,7 +110,6 @@ async function _getVideoTimestamps(url) {
       }
       return data
     })
-    fs.writeFileSync(dir + '/htmlAfter.html', htmlAfter)
 
     await page.close()
     return { title, transcript }
