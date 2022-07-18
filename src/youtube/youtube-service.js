@@ -41,42 +41,41 @@ async function _getVideoTimestamps(url) {
   const browser = await _launchBrowser()
   const page = await browser.newPage()
 
-  console.log('Fetching url..')
+  console.info('Fetching url..')
   await page.goto(url, { waitUntil: 'load' })
 
   try {
-    console.log('Rejecting cookies...')
+    console.info('Rejecting cookies...')
     try {
+      await page.waitForSelector(
+        '[aria-label="Reject the use of cookies and other data for the purposes described"]',
+        { timeout: 5000 },
+      )
       await page.click(
         '[aria-label="Reject the use of cookies and other data for the purposes described"]',
       )
     } catch (e) {
-      console.log(`No cookies screen`)
+      console.info(`No cookies screen!`)
     }
 
     try {
-      console.log('Traying first dropdown selector')
+      console.info('Traying first dropdown selector')
       await page.waitForSelector(
         '#primary #menu-container button[aria-label="More actions"]',
       )
       await page.click(
         '#primary #menu-container button[aria-label="More actions"]',
       )
-
-      console.log('getting html...')
-      htmlAfter = await page.content()
     } catch (e) {
-      console.log('Failed. Trying second dropdown selector')
+      console.info('Failed. Trying second dropdown selector')
       await page.waitForSelector(
         '#primary #top-row [aria-label="More actions"]',
       )
       await page.click('#primary #top-row [aria-label="More actions"]')
-
-      console.log('getting html')
-      htmlAfter = await page.content()
     }
 
     // get video title
+    console.info('Getting title...')
     await page.waitForSelector('#container > h1')
     const title = await page.evaluate(() => {
       const title = document.querySelector('#container > h1')
@@ -84,6 +83,7 @@ async function _getVideoTimestamps(url) {
     })
 
     // click show transcriptions
+    console.info('Getting transcriptions...')
     await page.waitForSelector(
       '#items > ytd-menu-service-item-renderer:nth-child(2)',
     )
@@ -110,6 +110,7 @@ async function _getVideoTimestamps(url) {
       }
       return data
     })
+    console.info('Done.')
 
     await page.close()
     return { title, transcript }
