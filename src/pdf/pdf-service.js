@@ -9,6 +9,8 @@ const exportNotesFromPDF = async file => {
 
   try {
     const response = await axios.post(process.env.PYTHON_BACKEND, formData, {
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
       headers: {
         ...formData.getHeaders(),
       },
