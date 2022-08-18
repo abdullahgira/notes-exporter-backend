@@ -1,7 +1,7 @@
 const puppeteer = require('puppeteer')
 let browser
 
-const SKIP_INTERVAL = 10
+const DEFAULT_SKIP_INTERVAL = 10
 
 const exportNotesFromYoutube = async (url, timestamps) => {
   url = url.replace(/&t=\d+s/gm, '')
@@ -9,9 +9,8 @@ const exportNotesFromYoutube = async (url, timestamps) => {
   const formattedTimestamps = _formatInputTimestamps(
     timestamps.split('\n').filter(Boolean),
   )
-  const rangeTimestamps = formattedTimestamps.map(t =>
-    _getSkipInterval(t, SKIP_INTERVAL),
-  )
+  const rangeTimestamps = formattedTimestamps.map(t => _getSkipInterval(t))
+  console.log({ rangeTimestamps })
 
   const videoTimestamps = await _tryGettingVideoTimestmaps(url)
 
@@ -120,34 +119,42 @@ async function _getVideoTimestamps(url) {
   }
 }
 
-function _getSkipInterval(time, intervalInSeconds) {
+function _getSkipInterval(time) {
   let [hour, min, sec] = time.split(':')
+  let intervalInSeconds = time.split(',')[1] || DEFAULT_SKIP_INTERVAL
+
   hour = parseInt(hour)
   min = parseInt(min)
   sec = parseInt(sec)
+  intervalInSeconds = parseInt(intervalInSeconds)
 
+  // we don't have hours column, then shift the columns
   if (!sec) {
     sec = min
     min = hour
     hour = 0
   }
 
-  const addedSec = (sec + intervalInSeconds) % 60
-  const addedMin = addedSec < sec ? (min + 1) % 60 : min
-  const addedHours = addedMin < min ? hour + 1 : hour
+  const addedSec = sec + ((intervalInSeconds % 3600) % 60)
+  // const addedMin = addedSec < sec ? (min + 1) % 60 : min
+  const addedMin = min + parseInt((intervalInSeconds % 3600) / 60)
+  // const addedHours = addedMin < min ? hour + 1 : hour
+  const addedHours = hour + parseInt(intervalInSeconds / 3600)
+
+  const intervalToRemove = 5
 
   let removedSec = 0,
     removedMin = 0,
     removedHours = 0
   if (min || hour) {
     removedSec =
-      sec - intervalInSeconds < 0
-        ? 60 + (sec - intervalInSeconds)
-        : sec - intervalInSeconds
+      sec - intervalToRemove < 0
+        ? 60 + (sec - intervalToRemove)
+        : sec - intervalToRemove
     removedMin = removedSec < sec ? min : min - 1 < 0 ? 60 + (min - 1) : min - 1
     removedHours = removedMin <= min ? hour : hour - 1
   } else {
-    removedSec = sec - intervalInSeconds < 0 ? 0 : sec - intervalInSeconds
+    removedSec = sec - intervalToRemove < 0 ? 0 : sec - intervalToRemove
   }
 
   const postTime = `${addedHours ? addedHours + ':' : ''}${
@@ -158,12 +165,14 @@ function _getSkipInterval(time, intervalInSeconds) {
     removedHours ? _formatTime(removedMin) : removedMin
   }:${_formatTime(removedSec)}`
 
-  return { postTime, preTime }
+  return { postTime, preTime, duration: intervalInSeconds }
 }
 
 function _formatInputTimestamps(timestamps) {
   return timestamps.map(t => {
     let [h, m, s] = t.split(':')
+    let d = t.split(',')[1]
+
     h = parseInt(h)
     m = parseInt(m)
     s = parseInt(s)
@@ -174,7 +183,9 @@ function _formatInputTimestamps(timestamps) {
       h = 0
     }
 
-    return `${h ? h + ':' : ''}${h ? _formatTime(m) : m}:${_formatTime(s)}`
+    return `${h ? h + ':' : ''}${h ? _formatTime(m) : m}:${_formatTime(s)}${
+      d ? `,${d}` : ''
+    }`
   })
 }
 
