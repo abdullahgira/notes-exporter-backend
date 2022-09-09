@@ -1,26 +1,35 @@
+const util = require('util')
+
+const getYoutubeTitle = require('get-youtube-title')
 const puppeteer = require('puppeteer')
+const { getSubtitles } = require('youtube-captions-scraper')
+
+const getYoutubeTitlePromise = util.promisify(getYoutubeTitle)
+
 let browser
 
 const DEFAULT_SKIP_INTERVAL = 10
 
 const exportNotesFromYoutube = async (url, timestamps) => {
   url = url.replace(/&t=\d+s/gm, '')
+  const videoID = _getVideoIdFromUrl(url)
 
   const formattedTimestamps = _formatInputTimestamps(
     timestamps.split('\n').filter(Boolean),
   )
-  const rangeTimestamps = formattedTimestamps.map(t => _getSkipInterval(t))
-  console.log({ rangeTimestamps })
 
-  const videoTimestamps = await _tryGettingVideoTimestmaps(url)
+  const rangeTimestamps = formattedTimestamps.map(t => _getSkipIntervalV2(t))
 
-  const notes = _getRangeTimestampNotesFromVideo(
+  const videoTranscripts = await getSubtitles({ videoID, lang: 'en' })
+  const videoTitle = await getYoutubeTitlePromise(videoID)
+
+  const notes = _getRangeTimestampNotesFromVideoV2(
     rangeTimestamps,
-    videoTimestamps.transcript,
+    videoTranscripts,
     url,
   )
 
-  return { title: videoTimestamps.title, notes }
+  return { title: videoTitle, notes }
 }
 
 async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
@@ -59,7 +68,7 @@ async function _getVideoTimestamps(url) {
     }
 
     try {
-      console.info('Traying first dropdown selector')
+      console.info('Trying first dropdown selector')
       await page.waitForSelector(
         '#primary #menu-container button[aria-label="More actions"]',
       )
@@ -120,8 +129,11 @@ async function _getVideoTimestamps(url) {
 }
 
 function _getSkipInterval(time) {
-  let [hour, min, sec] = time.split(':')
-  let intervalInSeconds = time.split(',')[1] || DEFAULT_SKIP_INTERVAL
+  let [timeOnly, intervalInSeconds] = time.split(',')
+  intervalInSeconds = intervalInSeconds || DEFAULT_SKIP_INTERVAL
+
+  // let intervalInSeconds = time.split(',')[1] || DEFAULT_SKIP_INTERVAL
+  let [hour, min, sec] = timeOnly.split(':')
 
   hour = parseInt(hour)
   min = parseInt(min)
@@ -166,6 +178,28 @@ function _getSkipInterval(time) {
   }:${_formatTime(removedSec)}`
 
   return { postTime, preTime, duration: intervalInSeconds }
+}
+
+function _getSkipIntervalV2(time) {
+  let [timeOnly, intervalInSeconds] = time.split(',')
+  intervalInSeconds = intervalInSeconds || DEFAULT_SKIP_INTERVAL
+
+  let hour, min, sec
+  let splittedTime = timeOnly.split(':')
+
+  if (splittedTime.length === 3) [hour, min, sec] = timeOnly.split(':')
+  else [min, sec] = timeOnly.split(':')
+
+  hour = parseInt(hour)
+  min = parseInt(min)
+  sec = parseInt(sec)
+  intervalInSeconds = parseInt(intervalInSeconds)
+
+  let seconds = _getTimeInSeconds(hour, min, sec)
+  let preTime = seconds - 5
+  let postTime = seconds + intervalInSeconds
+
+  return { preTime, postTime, duration: intervalInSeconds }
 }
 
 function _formatInputTimestamps(timestamps) {
@@ -215,9 +249,41 @@ function _getRangeTimestampNotesFromVideo(
   })
 }
 
+function _getRangeTimestampNotesFromVideoV2(
+  rangeTimestamps,
+  videoTranscripts,
+  url,
+) {
+  return rangeTimestamps.map(r => {
+    const matchedPreIndex = _matchPreTimeWithVideoCaption(
+      r.preTime,
+      videoTranscripts,
+    )
+    const matchedPostIndex = _matchPostTimeWithVideoCaption(
+      r.postTime,
+      videoTranscripts,
+    )
+
+    const transcriptsToJoin = videoTranscripts.slice(
+      matchedPreIndex,
+      matchedPostIndex + 1,
+    )
+
+    const note = transcriptsToJoin.map(t => t.text).join(' ')
+
+    // convert start time to int instead of float to use in the link
+    const link = _getTimestampLinkV2(parseInt(transcriptsToJoin[0].start), url)
+    return { note, link, from: r.preTime, to: r.postTime }
+  })
+}
+
 function _getTimestampLink(time, url) {
   const timeInSeconds = _timeInSeconds(time)
   return `${url}&t=${timeInSeconds}s`
+}
+
+function _getTimestampLinkV2(seconds, url) {
+  return `${url}&t=${seconds}s`
 }
 
 function _timeInSeconds(time) {
@@ -244,6 +310,14 @@ function _matchPreTimeFromVideoTimestamps(timestampToMatch, videoTimestamps) {
   return prevIndex
 }
 
+function _matchPreTimeWithVideoCaption(timestampToMatch, videoTimestamps) {
+  const allPrev = videoTimestamps.filter(
+    vt => parseFloat(vt.start) <= timestampToMatch,
+  )
+
+  return allPrev.length - 1
+}
+
 function _matchPostTimeFromVideoTimestamps(timestampToMatch, videoTimestamps) {
   const allPost = videoTimestamps.filter(
     vt => _timeInSeconds(vt.time) >= _timeInSeconds(timestampToMatch),
@@ -251,6 +325,18 @@ function _matchPostTimeFromVideoTimestamps(timestampToMatch, videoTimestamps) {
   if (!allPost.length) return videoTimestamps.length - 1
 
   const postIndex = videoTimestamps.findIndex(vt => vt.time === allPost[0].time)
+  return postIndex
+}
+
+function _matchPostTimeWithVideoCaption(timestampToMatch, videoTimestamps) {
+  const allPost = videoTimestamps.filter(
+    vt => parseFloat(vt.start) >= timestampToMatch,
+  )
+  if (!allPost.length) return videoTimestamps.length - 1
+
+  const postIndex = videoTimestamps.findIndex(
+    vt => vt.start === allPost[0].start,
+  )
   return postIndex
 }
 
@@ -272,6 +358,22 @@ async function _launchBrowser() {
 
     return browser
   }
+}
+
+function _getVideoIdFromUrl(url) {
+  const videoId = ''
+  const pattern =
+    /^https:\/\/(?:www\.youtube\.com\/watch\?v=|youtu\.be\/)([\w\d-]+)/
+
+  const groups = url.match(pattern)
+
+  if (!groups?.length) return
+  return groups[1]
+}
+
+function _getTimeInSeconds(hour = 0, min = 0, sec = 0) {
+  if (hour) return hour * 60 * 60 + min * 60 + sec
+  return min * 60 + sec
 }
 
 const youtubeService = {
