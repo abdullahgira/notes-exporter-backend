@@ -1,10 +1,8 @@
 const util = require('util')
+const { setTimeout } = require('timers/promises')
 
-const getYoutubeTitle = require('get-youtube-title')
 const puppeteer = require('puppeteer')
 const { getSubtitles } = require('youtube-captions-scraper')
-
-const getYoutubeTitlePromise = util.promisify(getYoutubeTitle)
 
 let browser
 
@@ -21,7 +19,6 @@ const exportNotesFromYoutube = async (url, timestamps) => {
   const rangeTimestamps = formattedTimestamps.map(t => _getSkipIntervalV2(t))
 
   const videoTranscripts = await getSubtitles({ videoID, lang: 'en' })
-  const videoTitle = await getYoutubeTitlePromise(videoID)
 
   const notes = _getRangeTimestampNotesFromVideoV2(
     rangeTimestamps,
@@ -29,7 +26,7 @@ const exportNotesFromYoutube = async (url, timestamps) => {
     url,
   )
 
-  return { title: videoTitle, notes }
+  return { title: '', notes }
 }
 
 async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
