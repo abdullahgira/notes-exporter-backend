@@ -26,7 +26,7 @@ app.use(
 
 app.use((err, req, res, next) => {
   console.error(err)
-  return res.json({
+  return res.status(500).json({
     error: `Something went wrong, may be you've not selected the file`,
   })
 })
