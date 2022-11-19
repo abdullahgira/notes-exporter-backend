@@ -15,11 +15,10 @@ const exportNotesFromPDF = async file => {
         ...formData.getHeaders(),
       },
     })
-    const notes = response.data.highlights
-    const title = response.data.title
+    const notes = response.data
 
     fs.unlinkSync(file.path)
-    return { title, highlights: notes }
+    return { highlights: notes }
   } catch (e) {
     console.error(e)
     return ''
