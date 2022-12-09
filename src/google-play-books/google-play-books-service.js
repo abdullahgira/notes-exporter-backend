@@ -18,7 +18,7 @@ function _filterNotes(data) {
   const regexp =
     /<td\s+class="\w+"\s+colspan="\d+"\s+rowspan="\d+"><p\s+class="\w+"><span\s+class="\w+">([\w\W][^<>]+?)<\/span><\/p><p\s+class="[\w\s]+"><span\s+class="\w+"><\/span><\/p>(<p\s+class="\w+"><span\s+class="\w+">([\w\W][^<>]+?)<\/span><\/p><p\s+class="[\w\s]+"><span\s+class="\w+"><\/span><\/p>)?<p\s+class="\w+"><span\s+class="\w+">.*?<\/span><\/p><\/td><td.*?href="(.*?)"/gm
   const regexp2 =
-    /<td\s+colspan="\d+"\s+rowspan="\d+"\s+style="[\w#&;\d\-:]+"><p\s+style=".*?"><span\s+style=".*?">([\w\W][^<>]+?)<\/span><\/p><p\s+style=".*?"><span\s+style=".*?"><\/span><\/p>(<p\s+style=".*?"><span\s+style=".*?">([\w\W][^<>]+?)<\/span><\/p><p\s+style=".*?"><span\s+style=".*?"><\/span><\/p>)?<p\s+style=".*?"><span\s+style=".*?">.*?<\/span><\/p><\/td><td.*?href="(.*?)"/gm
+    /<td\s+colspan="\d+"\s+rowspan="\d+"\s+style="[\w#&;\d\-:]+"><p\s+style=".*?"><span\s+style=".*?">([\w\W][^<>]+?)<\/span><\/p><p\s+style=".*?"><span\s+style=".*?"><\/span><\/p>(<p\s+style="[\w\W][^<>]+?"><span\s+style="[\w\W][^<>]+?">([\w\W][^<>]+?)<\/span><\/p><p\s+style=".*?"><span\s+style=".*?"><\/span><\/p>)?<p\s+style=".*?"><span\s+style=".*?">.*?<\/span><\/p><\/td><td.*?href="(.*?)"/gm
   let m
   let returnVal = []
 
