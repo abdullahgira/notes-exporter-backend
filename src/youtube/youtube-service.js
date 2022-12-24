@@ -6,7 +6,7 @@ const { getSubtitles } = require('youtube-captions-scraper')
 
 let browser
 
-const DEFAULT_SKIP_INTERVAL = 10
+const DEFAULT_SKIP_INTERVAL = 30
 
 const exportNotesFromYoutube = async (url, timestamps) => {
   url = url.replace(/&t=\d+s/gm, '')
@@ -193,8 +193,9 @@ function _getSkipIntervalV2(time) {
   intervalInSeconds = parseInt(intervalInSeconds)
 
   let seconds = _getTimeInSeconds(hour, min, sec)
-  let preTime = seconds - 5
-  let postTime = seconds + intervalInSeconds
+  let postTime = seconds + 5
+  let preTime =
+    seconds - intervalInSeconds > 0 ? seconds - intervalInSeconds : 0
 
   return { preTime, postTime, duration: intervalInSeconds }
 }
