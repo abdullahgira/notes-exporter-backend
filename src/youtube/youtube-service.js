@@ -18,18 +18,22 @@ const exportNotesFromYoutube = async (url, timestamps) => {
 
   const rangeTimestamps = formattedTimestamps.map(t => _getSkipIntervalV2(t))
 
-  const videoTranscripts = await getSubtitles({ videoID, lang: 'en' })
-
-  const notes = _getRangeTimestampNotesFromVideoV2(
-    rangeTimestamps,
-    videoTranscripts,
-    url,
-  )
+  let notes
+  try {
+    const videoTranscripts = await getSubtitles({ videoID, lang: 'en' })
+    notes = _getRangeTimestampNotesFromVideoV2(
+      rangeTimestamps,
+      videoTranscripts,
+      url,
+    )
+  } catch (e) {
+    notes = _getCapturedTimeLinks({ rangeTimestamps, url })
+  }
 
   return { title: '', notes }
 }
 
-async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
+async function _tryGettingVideoTimestmaps_DEPRECATED(url, ntimes = 3) {
   while (ntimes--) {
     try {
       const timestamps = await _getVideoTimestamps(url)
@@ -43,7 +47,7 @@ async function _tryGettingVideoTimestmaps(url, ntimes = 3) {
 }
 
 async function _getVideoTimestamps(url) {
-  const browser = await _launchBrowser()
+  const browser = await _launchBrowser_DEPRECATED()
   const page = await browser.newPage()
 
   console.info('Fetching url..')
@@ -125,7 +129,7 @@ async function _getVideoTimestamps(url) {
   }
 }
 
-function _getSkipInterval(time) {
+function _getSkipInterval_DEPRECATED(time) {
   let [timeOnly, intervalInSeconds] = time.split(',')
   intervalInSeconds = intervalInSeconds || DEFAULT_SKIP_INTERVAL
 
@@ -178,8 +182,8 @@ function _getSkipInterval(time) {
 }
 
 function _getSkipIntervalV2(time) {
-  let [timeOnly, intervalInSeconds] = time.split(',')
-  intervalInSeconds = intervalInSeconds || DEFAULT_SKIP_INTERVAL
+  let [timeOnly, duration] = time.split(',')
+  duration = duration || DEFAULT_SKIP_INTERVAL
 
   let hour, min, sec
   let splittedTime = timeOnly.split(':')
@@ -190,14 +194,13 @@ function _getSkipIntervalV2(time) {
   hour = parseInt(hour)
   min = parseInt(min)
   sec = parseInt(sec)
-  intervalInSeconds = parseInt(intervalInSeconds)
+  duration = parseInt(duration)
 
   let seconds = _getTimeInSeconds(hour, min, sec)
   let postTime = seconds + 5
-  let preTime =
-    seconds - intervalInSeconds > 0 ? seconds - intervalInSeconds : 0
+  let preTime = seconds - duration > 0 ? seconds - duration : 0
 
-  return { preTime, postTime, duration: intervalInSeconds }
+  return { preTime, postTime, duration: duration }
 }
 
 function _formatInputTimestamps(timestamps) {
@@ -221,17 +224,17 @@ function _formatInputTimestamps(timestamps) {
   })
 }
 
-function _getRangeTimestampNotesFromVideo(
+function _getRangeTimestampNotesFromVideo_DEPRECATED(
   rangeTimestamps,
   videoTimestamps,
   url,
 ) {
   return rangeTimestamps.map(r => {
-    const matchedPreIndex = _matchPreTimeFromVideoTimestamps(
+    const matchedPreIndex = _matchPreTimeFromVideoTimestamps_DEPRECATED(
       r.preTime,
       videoTimestamps,
     )
-    const matchedPostIndex = _matchPostTimeFromVideoTimestamps(
+    const matchedPostIndex = _matchPostTimeFromVideoTimestamps_DEPRECATED(
       r.postTime,
       videoTimestamps,
     )
@@ -298,7 +301,10 @@ function _timeInSeconds(time) {
   return h * 60 + m * 60 + s
 }
 
-function _matchPreTimeFromVideoTimestamps(timestampToMatch, videoTimestamps) {
+function _matchPreTimeFromVideoTimestamps_DEPRECATED(
+  timestampToMatch,
+  videoTimestamps,
+) {
   const allPrev = videoTimestamps.filter(
     vt => _timeInSeconds(vt.time) <= _timeInSeconds(timestampToMatch),
   )
@@ -316,7 +322,10 @@ function _matchPreTimeWithVideoCaption(timestampToMatch, videoTimestamps) {
   return allPrev.length - 1
 }
 
-function _matchPostTimeFromVideoTimestamps(timestampToMatch, videoTimestamps) {
+function _matchPostTimeFromVideoTimestamps_DEPRECATED(
+  timestampToMatch,
+  videoTimestamps,
+) {
   const allPost = videoTimestamps.filter(
     vt => _timeInSeconds(vt.time) >= _timeInSeconds(timestampToMatch),
   )
@@ -342,7 +351,7 @@ function _formatTime(time) {
   return time < 10 ? `0${time}` : time
 }
 
-async function _launchBrowser() {
+async function _launchBrowser_DEPRECATED() {
   if (browser?.isConnected()) return browser
   else {
     browser = await puppeteer.launch({
@@ -372,6 +381,27 @@ function _getVideoIdFromUrl(url) {
 function _getTimeInSeconds(hour = 0, min = 0, sec = 0) {
   if (hour) return hour * 60 * 60 + min * 60 + sec
   return min * 60 + sec
+}
+
+function _getCapturedTimeLinks({ rangeTimestamps, url }) {
+  return rangeTimestamps.map(r => ({
+    link: _getTimestampLinkV2(parseInt(r.preTime), url),
+    from: _timeToString(r.preTime),
+    to: _timeToString(r.postTime),
+    note: '',
+  }))
+}
+
+function _timeToString(seconds) {
+  let h = _addLeadingZero(Math.floor(seconds / 3600))
+  let m = _addLeadingZero(Math.floor((seconds % 3600) / 60))
+  let s = _addLeadingZero(Math.floor((seconds % 3600) % 60))
+
+  return `${h !== '00' ? h + ':' : ''}${m}:${s}`
+}
+
+function _addLeadingZero(t) {
+  return t < 10 ? `0${t}` : t
 }
 
 const youtubeService = {
